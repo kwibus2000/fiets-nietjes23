@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Fietsersbond Dordrecht</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 400px;
+      width: 100%;
+    }
+
+    #addressList {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .addressItem {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Fietsersbond Dordrecht</h1>
+  <div id="map"></div>
+  <!-- <button id="getAddressButton">Get Addresses</button> -->
+  <ul id="addressList"></ul>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Initialize the map and event listener
+    function initMap() {
+      const dordrecht = [51.8133, 4.6901];
+      const map = L.map('map').setView(dordrecht, 14);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      // Add a click event listener to the map
+      map.on('click', function (event) {
+        const latLng = event.latlng;
+        getAddressFromCoordinates(latLng);
+      });
+
+      const addressSet = new Set();
+      const addressList = document.getElementById('addressList');
+
+      function getAddressFromCoordinates(latLng) {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latLng.lat}&lon=${latLng.lng}`;
+
+        fetch(url)
+          .then(response => response.json())
+          .then(data => {
+            const address = data.display_name;
+            console.log('Address:', address);
+            addressSet.add(address);
+            updateAddressList();
+          })
+          .catch(error => {
+            console.log('Error:', error);
+          });
+      }
+
+      function updateAddressList() {
+        // Clear the existing list
+        addressList.innerHTML = '';
+
+        // Create a list item for each address
+        addressSet.forEach(address => {
+          const listItem = document.createElement('li');
+          listItem.textContent = address;
+          listItem.classList.add('addressItem');
+          addressList.appendChild(listItem);
+        });
+      }
+
+      const getAddressButton = document.getElementById('getAddressButton');
+      getAddressButton.addEventListener('click', function () {
+        const addresses = Array.from(addressSet);
+        console.log('Addresses:', addresses);
+      });
+    }
+
+    // Initialize the map when the page is loaded
+    document.addEventListener('DOMContentLoaded', initMap);
+  </script>
+</body>
+
+</html>
