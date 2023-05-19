@@ -3,7 +3,8 @@
 
 <head>
   <title>Fietsersbond Dordrecht</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
   <style>
     #map {
       height: 400px;
@@ -18,28 +19,35 @@
     .addressItem {
       margin-bottom: 5px;
     }
+
+    .custom-marker-icon {
+      color: #007bff;
+      font-size: 24px;
+      line-height: 1;
+    }
   </style>
 </head>
 
 <body>
   <h1>Fietsersbond Dordrecht</h1>
   <div id="map"></div>
-  <!-- <button id="getAddressButton">Get Addresses</button> -->
+  <button id="getAddressButton">Adressen</button>
+  <button id="downloadButton">Download Adressen</button>
+  <input type="file" id="uploadFile" accept=".txt">
+  <button id="uploadButton">Upload Adressen</button>
   <ul id="addressList"></ul>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
     // Initialize the map and event listener
     function initMap() {
-      const dordrecht = [51.8133, 4.6901];
-      const map = L.map('map').setView(dordrecht, 14);
-
+      const map = L.map('map').setView([51.813, 4.690], 14);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+        attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
       }).addTo(map);
 
       // Add a click event listener to the map
-      map.on('click', function (event) {
+      map.on('click', (event) => {
         const latLng = event.latlng;
         getAddressFromCoordinates(latLng);
       });
@@ -54,9 +62,10 @@
           .then(response => response.json())
           .then(data => {
             const address = data.display_name;
-            console.log('Address:', address);
+            console.log('Adres:', address);
             addressSet.add(address);
             updateAddressList();
+            addMarkerToMap(latLng, address);
           })
           .catch(error => {
             console.log('Error:', error);
@@ -76,10 +85,91 @@
         });
       }
 
-      const getAddressButton = document.getElementById('getAddressButton');
-      getAddressButton.addEventListener('click', function () {
+      function addMarkerToMap(latLng, address) {
+        const bicycleIcon = L.divIcon({
+          className: 'custom-marker-icon',
+          html: '<i class="fas fa-bicycle"></i>',
+          iconSize: [32, 32],
+          iconAnchor: [16, 32],
+          popupAnchor: [-3, -38],
+          tooltipAnchor: [22, -12],
+        });
+
+        const marker = L.marker(latLng, { icon: bicycleIcon }).addTo(map);
+        marker.bindPopup(address);
+      }
+
+      function downloadAddresses() {
         const addresses = Array.from(addressSet);
-        console.log('Addresses:', addresses);
+        const content = addresses.join('\n');
+        const element = document.createElement('a');
+        element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+        element.download = 'adressen.txt';
+        element.click();
+      }
+
+      function uploadAddresses(file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const contents = event.target.result;
+          const addresses = contents.split('\n');
+          addresses.forEach(address => {
+            if (address.trim() !== '') {
+              addressSet.add(address);
+              updateAddressList();
+              getAddressCoordinates(address);
+              // Extract coordinates from the address if needed
+              // and add markers using addMarkerToMap() function
+            }
+          });
+        };
+        reader.readAsText(file);
+      }
+
+      function getAddressCoordinates(address) {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+
+        fetch(url)
+          .then(response => response.json())
+          .then(data => {
+            if (data.length > 0) {
+              const lat = parseFloat(data[0].lat);
+              const lon = parseFloat(data[0].lon);
+              const latLng = L.latLng(lat, lon);
+              addMarkerToMap(latLng, address);
+            } else {
+              console.log('Could not find coordinates for address:', address);
+            }
+          })
+          .catch(error => {
+            console.log('Error:', error);
+          });
+      }
+
+      const getAddressButton = document.getElementById('getAddressButton');
+      getAddressButton.addEventListener('click', () => {
+        const addresses = Array.from(addressSet);
+        console.log('Adressen:', addresses);
+      });
+
+      const downloadButton = document.getElementById('downloadButton');
+      downloadButton.addEventListener('click', downloadAddresses);
+
+      const uploadFile = document.getElementById('uploadFile');
+      uploadFile.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        uploadAddresses(file);
+      });
+
+      const uploadButton = document.getElementById('uploadButton');
+      uploadButton.addEventListener('click', () => {
+        uploadFile.click();
+      });
+
+      // Add a click event listener to the map
+      map.on('click', (event) => {
+        const latLng = event.latlng;
+        getAddressFromCoordinates(latLng);
       });
     }
 
