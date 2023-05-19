@@ -32,9 +32,10 @@
   <h1>Fietsersbond Dordrecht</h1>
   <div id="map"></div>
   <button id="getAddressButton">Adressen</button>
-  <button id="downloadButton">Download Adressen</button>
+  <button id="downloadButton">Download adressen</button>
   <input type="file" id="uploadFile" accept=".txt">
-  <button id="uploadButton">Upload Adressen</button>
+  <button id="uploadButton">Upload adressen</button>
+  <button id="clearButton">Wis adressen</button>
   <ul id="addressList"></ul>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -53,7 +54,7 @@
       });
 
       const addressSet = new Set();
-      const addressList = document.getElementById('addressList');
+      const markers = new Map();
 
       function getAddressFromCoordinates(latLng) {
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latLng.lat}&lon=${latLng.lng}`;
@@ -73,6 +74,7 @@
       }
 
       function updateAddressList() {
+        const addressList = document.getElementById('addressList');
         // Clear the existing list
         addressList.innerHTML = '';
 
@@ -97,6 +99,15 @@
 
         const marker = L.marker(latLng, { icon: bicycleIcon }).addTo(map);
         marker.bindPopup(address);
+        markers.set(address, marker);
+      }
+
+      function removeMarkerFromMap(address) {
+        const marker = markers.get(address);
+        if (marker) {
+          marker.remove();
+          markers.delete(address);
+        }
       }
 
       function downloadAddresses() {
@@ -118,8 +129,6 @@
               addressSet.add(address);
               updateAddressList();
               getAddressCoordinates(address);
-              // Extract coordinates from the address if needed
-              // and add markers using addMarkerToMap() function
             }
           });
         };
@@ -145,6 +154,16 @@
             console.log('Error:', error);
           });
       }
+
+      function clearAddresses() {
+        addressSet.forEach(address => {
+          removeMarkerFromMap(address);
+        });
+        addressSet.clear();
+        updateAddressList();
+      }
+
+      document.getElementById('clearButton').addEventListener('click', clearAddresses);
 
       const getAddressButton = document.getElementById('getAddressButton');
       getAddressButton.addEventListener('click', () => {
