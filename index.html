@@ -4,7 +4,7 @@
 <head>
   <title>Fietsersbond Dordrecht</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     #map {
       height: 400px;
@@ -25,17 +25,24 @@
       font-size: 24px;
       line-height: 1;
     }
+
+    #copyright {
+      color: #007bff;
+      font-weight: 100
+    }
   </style>
 </head>
 
 <body>
   <h1>Fietsersbond Dordrecht</h1>
   <div id="map"></div>
-  <button id="getAddressButton">Adressen</button>
   <button id="downloadButton">Download adressen</button>
   <input type="file" id="uploadFile" accept=".txt">
   <button id="uploadButton">Upload adressen</button>
   <button id="clearButton">Wis adressen</button>
+  <small id="copyright">
+    (&copy; 2023 kwisoft)
+  </small>
   <ul id="addressList"></ul>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -44,14 +51,8 @@
     function initMap() {
       const map = L.map('map').setView([51.813, 4.690], 14);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+        attribution: '&copy; <a href="https://openstreetmap.org" target="_blank">OpenStreetMap</a> contributors'
       }).addTo(map);
-
-      // Add a click event listener to the map
-      map.on('click', (event) => {
-        const latLng = event.latlng;
-        getAddressFromCoordinates(latLng);
-      });
 
       const addressSet = new Set();
       const markers = new Map();
@@ -63,7 +64,6 @@
           .then(response => response.json())
           .then(data => {
             const address = data.display_name;
-            console.log('Adres:', address);
             addressSet.add(address);
             updateAddressList();
             addMarkerToMap(latLng, address);
@@ -164,12 +164,6 @@
       }
 
       document.getElementById('clearButton').addEventListener('click', clearAddresses);
-
-      const getAddressButton = document.getElementById('getAddressButton');
-      getAddressButton.addEventListener('click', () => {
-        const addresses = Array.from(addressSet);
-        console.log('Adressen:', addresses);
-      });
 
       const downloadButton = document.getElementById('downloadButton');
       downloadButton.addEventListener('click', downloadAddresses);
